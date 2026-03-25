@@ -1,0 +1,7 @@
+# Data files
+data/
+
+# Virtual environments
+.venv/
+uv.lock
+pyproject.toml
