@@ -86,7 +86,7 @@ while True:
 
             # Draw green bounding box
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            cv2.putText(frame, 'Measured', (x, y - 10),
+            cv2.putText(frame, 'Observed', (x, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
             
         else:
