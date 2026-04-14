@@ -96,7 +96,7 @@ while True:
     # Draw Kalman box every frame if initialized
     if detected and x_hat is not None:
         # After Kalman predict/update step:
-        kf_x, kf_y, kf_w, kf_h = int(x_hat[0]), int(x_hat[1]), int(x_hat[2]), int(x_hat[3])
+        kf_x, kf_y, kf_w, kf_h = round(x_hat[0]), round(x_hat[1]), round(x_hat[2]), round(x_hat[3])
 
         cv2.rectangle(frame, (kf_x, kf_y), (kf_x+kf_w, kf_y+kf_h), (255, 0, 0), 2)
         cv2.putText(frame, 'Kalman', (kf_x, kf_y - 10),
