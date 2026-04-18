@@ -1,6 +1,12 @@
+import argparse
 import cv2
 import numpy as np
 from pykalman import KalmanFilter
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--haar', type=bool)
+parser.add_argument('--kalman', type=bool)
+args = parser.parse_args()
 
 # State transiiton matrix 
 # Follows forward Euler x_{k+1} = x_k + dx
@@ -30,10 +36,6 @@ R_est = np.load('parameters/R.npy')
 n = F.shape[0]  # Number of predicted states
 m = H.shape[0]  # Number of observed states
 
-# We don't use control for this
-u = np.zeros(n)
-
-DETECT_EVERY_N_FRAMES = 1
 frame_count = 0
 
 x_hat = None
@@ -62,39 +64,39 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_count += 1
 
-    # Run facial detector every N frames
-    if frame_count % DETECT_EVERY_N_FRAMES == 0:
-        # Detect faces, return list of [x, y, w, h] bounding boxes
-        detections = detector.detectMultiScale(
-            gray,
-            scaleFactor=1.1,    # how much image is scaled down each step
-            minNeighbors=5,     # higher = fewer false positives
-            minSize=(60, 60)    # ignore tiny detections
-        )
+    # Detect faces, return list of [x, y, w, h] bounding boxes
+    detections = detector.detectMultiScale(
+        gray,
+        scaleFactor=1.1,    # how much image is scaled down each step
+        minNeighbors=5,     # higher = fewer false positives
+        minSize=(60, 60)    # ignore tiny detections
+    )
 
-        if len(detections) > 0:
-            x, y, w, h = detections[0]
-            z_t = np.array([x, y, w, h], dtype=float)
+    if len(detections) > 0:
+        x, y, w, h = detections[0]
+        z_t = np.array([x, y, w, h], dtype=float)
 
+        if args.kalman:
             if not detected:
                 # Initialize state from first detection
                 x_hat = np.concatenate((z_t, np.zeros(m)))
                 P_hat = np.diag([100, 100, 100, 100, 10, 10, 10, 10]).astype(float)
                 detected = True
-
+            
             x_hat, P_hat = kf.filter_update(x_hat, P_hat, observation=z_t)
 
+        if args.haar:
             # Draw green bounding box
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
             cv2.putText(frame, 'Observed', (x, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-            
-        else:
-            if detected:
-                x_hat, P_hat = kf.filter_update(x_hat, P_hat, observation=None)
+        
+    else:
+        if args.kalman and detected:
+            x_hat, P_hat = kf.filter_update(x_hat, P_hat, observation=None)
 
     # Draw Kalman box every frame if initialized
-    if detected and x_hat is not None:
+    if args.kalman and detected and x_hat is not None:
         # After Kalman predict/update step:
         kf_x, kf_y, kf_w, kf_h = round(x_hat[0]), round(x_hat[1]), round(x_hat[2]), round(x_hat[3])
 
